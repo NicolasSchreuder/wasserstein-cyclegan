@@ -25,6 +25,7 @@ class Visualizer():
 
     # |visuals|: dictionary of images to display or save
     def display_current_results(self, visuals, epoch):
+        time.sleep(5)
         if self.display_id > 0: # show images in the browser
             idx = 1
             for label, image_numpy in visuals.items():
@@ -32,6 +33,8 @@ class Visualizer():
                 self.vis.image(image_numpy.transpose([2,0,1]), opts=dict(title=label),
                                    win=self.display_id + idx)
                 idx += 1
+
+        time.sleep(5)
 
         if self.use_html: # save images to a html file
             for label, image_numpy in visuals.items():

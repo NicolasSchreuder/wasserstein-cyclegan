@@ -18,7 +18,9 @@ total_steps = 0
 
 for epoch in range(1, opt.niter + opt.niter_decay + 1):
     epoch_start_time = time.time()
+    print(len(dataset))
     for i, data in enumerate(dataset):
+        print(i)
         iter_start_time = time.time()
         total_steps += opt.batchSize
         epoch_iter = total_steps - dataset_size * (epoch - 1)

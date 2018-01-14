@@ -343,15 +343,15 @@ class CycleGANModel(BaseModel):
 
 
     def get_current_errors(self):
-        D_A = self.loss_D_A.data[0]
-        G_A = self.loss_G_A.data[0]
-        Cyc_A = self.loss_cycle_A.data[0]
-        D_B = self.loss_D_B.data[0]
-        G_B = self.loss_G_B.data[0]
-        Cyc_B = self.loss_cycle_B.data[0]
+        D_A = self.loss_D_A
+        G_A = self.loss_G_A
+        Cyc_A = self.loss_cycle_A
+        D_B = self.loss_D_B
+        G_B = self.loss_G_B
+        Cyc_B = self.loss_cycle_B
         if self.opt.identity > 0.0:
-            idt_A = self.loss_idt_A.data[0]
-            idt_B = self.loss_idt_B.data[0]
+            idt_A = self.loss_idt_A
+            idt_B = self.loss_idt_B
             return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
                                 ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B)])
         else:

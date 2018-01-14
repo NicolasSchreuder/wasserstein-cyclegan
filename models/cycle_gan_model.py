@@ -43,7 +43,7 @@ class CycleGANModel(BaseModel):
         self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
                                     opt.ngf, opt.which_model_netG, opt.norm, opt.use_dropout, self.gpu_ids)
 
-        if self.isTrain:
+        if self.isTrain: # if not trained
             use_sigmoid = opt.no_lsgan
             self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
                                          opt.which_model_netD,
@@ -51,7 +51,8 @@ class CycleGANModel(BaseModel):
             self.netD_B = networks.define_D(opt.input_nc, opt.ndf,
                                          opt.which_model_netD,
                                          opt.n_layers_D, use_sigmoid, self.gpu_ids)
-        if not self.isTrain or opt.continue_train:
+
+        if not self.isTrain or opt.continue_train: # already trained
             which_epoch = opt.which_epoch
             self.load_network(self.netG_A, 'G_A', which_epoch)
             self.load_network(self.netG_B, 'G_B', which_epoch)
@@ -60,17 +61,18 @@ class CycleGANModel(BaseModel):
                 self.load_network(self.netD_B, 'D_B', which_epoch)
 
         if self.isTrain:
-            self.old_lr = opt.lr
+            self.old_lr = opt.lr # learning rate
             self.fake_A_pool = ImagePool(opt.pool_size)
             self.fake_B_pool = ImagePool(opt.pool_size)
             # define loss functions
             if opt.wgan:
-                self.criterionGAN = networks.WassersteinGANLoss()
+                self.criterionGAN = networks.WassersteinGANLoss() # WGAN loss
             else:
                 self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan, tensor=self.Tensor)
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers
+
             if opt.wgan:
                 if opt.wgan_optimizer == 'adam':
                     self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
@@ -164,6 +166,7 @@ class CycleGANModel(BaseModel):
         # D_B
         fake_A = self.fake_A_pool.query(self.fake_A)
         self.loss_D_B = self.backward_D_wasserstein(self.netD_B, self.real_A, fake_A)
+
         loss_D = self.loss_D_A + self.loss_D_B
         loss_D.backward(retain_variables=True)
 
@@ -188,16 +191,20 @@ class CycleGANModel(BaseModel):
         self.fake_B = self.netG_A.forward(self.real_A)
         pred_fake = self.netD_A.forward(self.fake_B)
         self.loss_G_A = self.criterionGAN(pred_fake, True)
+
         # D_B(G_B(B))
         self.fake_A = self.netG_B.forward(self.real_B)
         pred_fake = self.netD_B.forward(self.fake_A)
         self.loss_G_B = self.criterionGAN(pred_fake, True)
+
         # Forward cycle loss
         self.rec_A = self.netG_B.forward(self.fake_B)
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+
         # Backward cycle loss
         self.rec_B = self.netG_A.forward(self.fake_A)
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+
         # combined loss
         self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
         self.loss_G.backward()
@@ -222,11 +229,13 @@ class CycleGANModel(BaseModel):
         # Wasserstein-GAN loss
         # G_A(A)
         self.fake_B = self.netG_A.forward(self.real_A)
-        self.loss_G_A = self.criterionGAN(self.fake_B, generator_loss=True)
+        pred_fake = self.netD_A.forward(self.fake_B)
+        self.loss_G_A = self.criterionGAN(pred_fake, generator_loss=True)
 
         # G_B(B)
         self.fake_A = self.netG_B.forward(self.real_B)
-        self.loss_G_B = self.criterionGAN(self.fake_A, generator_loss=True)
+        pred_fake = self.netD_B.forward(self.fake_A)
+        self.loss_G_B = self.criterionGAN(pred_fake, generator_loss=True)
 
         # Forward cycle loss
         self.rec_A = self.netG_B.forward(self.fake_B)
@@ -262,6 +271,7 @@ class CycleGANModel(BaseModel):
                     self.backward_wgan_D(i_critic)
                     self.optimizer_D_A.step()
                     self.optimizer_D_B.step()
+
             # Train the generators
             self.optimizer_G.zero_grad()
             self.backward_wgan_G(do_backward=False)

@@ -246,9 +246,12 @@ class CycleGANModel(BaseModel):
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
-            self.idt_A = self.netG_A(self.real_B)
-            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
+            idt_A = self.netG_A(self.real_B)
+            loss_idt_A = self.criterionIdt(idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed.
+            idt_B = self.netG_B(self.real_A)
+            loss_idt_B = self.criterionIdt(idt_B, self.real_A) * lambda_A * lambda_idt
+
             self.idt_A = idt_A.data
             self.idt_B = idt_B.data
             self.loss_idt_A = loss_idt_A.data[0]
@@ -302,8 +305,6 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()
 
-        print('???')
-
         if self.use_wgan:
             if self.wgan_train_critics:
                 # Train the critics to optimality
@@ -315,7 +316,6 @@ class CycleGANModel(BaseModel):
                         p.data.clamp_(self.wgan_clamp_lower, self.wgan_clamp_upper)
                     self.optimizer_D_A.zero_grad()
                     self.optimizer_D_B.zero_grad()
-                    print('!!!')
                     self.backward_D_A_wgan()
                     self.backward_D_B_wgan()
                     #self.backward_wgan_D()

@@ -360,14 +360,14 @@ class CycleGANModel(BaseModel):
 
     def get_current_visuals(self):
         real_A = util.tensor2im(self.real_A.data)
-        fake_B = util.tensor2im(self.Variable(fake_B).data)
-        rec_A  = util.tensor2im(self.rec_A.data)
+        fake_B = util.tensor2im(self.fake_B)
+        rec_A  = util.tensor2im(self.rec_A)
         real_B = util.tensor2im(self.real_B.data)
-        fake_A = util.tensor2im(self.fake_A.data)
-        rec_B  = util.tensor2im(self.rec_B.data)
+        fake_A = util.tensor2im(self.fake_A)
+        rec_B  = util.tensor2im(self.rec_B)
         if self.opt.identity > 0.0:
-            idt_A = util.tensor2im(self.idt_A.data)
-            idt_B = util.tensor2im(self.idt_B.data)
+            idt_A = util.tensor2im(self.idt_A)
+            idt_B = util.tensor2im(self.idt_B)
             return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A), ('idt_B', idt_B),
                                 ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B), ('idt_A', idt_A)])
         else:

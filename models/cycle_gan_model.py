@@ -26,7 +26,8 @@ class CycleGANModel(BaseModel):
 
         # flag for indicating usage of Wasserstein GAN
         self.use_wgan = opt.wgan
-        self.wgan_n_critic = opt.wgan_n_critic
+        #self.wgan_n_critic = opt.wgan_n_critic
+        self.wgan_n_critic = 4
         self.wgan_clamp_lower = opt.wgan_clamp_lower
         self.wgan_clamp_upper = opt.wgan_clamp_upper
         self.wgan_train_critics = False
@@ -148,8 +149,8 @@ class CycleGANModel(BaseModel):
 
     def backward_D_wasserstein(self, netD, real, fake):
         # Real
-        pred_real = netD.forward(real)
-        pred_fake = netD.forward(fake)
+        pred_real = netD(real)
+        pred_fake = netD(fake)
         loss_D = self.criterionGAN(pred_fake, pred_real, generator_loss=False)
         #loss_D = -(pred_real.mean() - pred_fake.mean())
         # D wants to max pred_real.mean() and min pred_fake.mean()
@@ -243,7 +244,7 @@ class CycleGANModel(BaseModel):
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
-            self.idt_A = self.netG_A.forward(self.real_B)
+            self.idt_A = self.netG_A(self.real_B)
             self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed.
             self.idt_A = idt_A.data
@@ -279,7 +280,7 @@ class CycleGANModel(BaseModel):
 
         # Combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
-        loss_G.backward()
+
 
         self.fake_B = fake_B.data
         self.fake_A = fake_A.data
@@ -291,13 +292,15 @@ class CycleGANModel(BaseModel):
         self.loss_cycle_A = loss_cycle_A.data[0]
         self.loss_cycle_B = loss_cycle_B.data[0]
 
-        #if do_backward:
-        #    # Backprop
-        #    self.loss_G.backward()
+        if do_backward:
+            # Backprop
+            loss_G.backward()
 
     def optimize_parameters(self):
         # forward
         self.forward()
+
+        print('???')
 
         if self.use_wgan:
             if self.wgan_train_critics:
@@ -310,6 +313,7 @@ class CycleGANModel(BaseModel):
                         p.data.clamp_(self.wgan_clamp_lower, self.wgan_clamp_upper)
                     self.optimizer_D_A.zero_grad()
                     self.optimizer_D_B.zero_grad()
+                    print('!!!')
                     self.backward_D_A_wgan()
                     self.backward_D_B_wgan()
                     #self.backward_wgan_D()
@@ -319,13 +323,12 @@ class CycleGANModel(BaseModel):
             # Train the generators
             self.optimizer_G.zero_grad()
             self.backward_wgan_G()
-            self.optimizer_G.step()
 
-            #self.backward_wgan_G(do_backward=False)
-            #if self.wgan_train_critics:
-            #    self.optimizer_G.step()
-            #else:
-            #    self.wgan_train_critics = True
+            if self.wgan_train_critics:
+                self.optimizer_G.step()
+            else:
+                self.backward_wgan_G(do_backward=False)
+                self.wgan_train_critics = True
 
         else:
             # G_A and G_B

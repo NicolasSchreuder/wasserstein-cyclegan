@@ -299,8 +299,6 @@ class CycleGANModel(BaseModel):
         # forward
         self.forward()
 
-        print(('!!!!!'))
-
         if self.use_wgan:
             if self.wgan_train_critics:
                 # Train the critics to optimality
@@ -362,7 +360,7 @@ class CycleGANModel(BaseModel):
 
     def get_current_visuals(self):
         real_A = util.tensor2im(self.real_A.data)
-        fake_B = util.tensor2im(self.fake_B.data)
+        fake_B = util.tensor2im(self.Variable(fake_B).data)
         rec_A  = util.tensor2im(self.rec_A.data)
         real_B = util.tensor2im(self.real_B.data)
         fake_A = util.tensor2im(self.fake_A.data)

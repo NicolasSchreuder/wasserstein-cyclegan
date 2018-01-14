@@ -416,7 +416,6 @@ class InstanceNormalization(torch.nn.Module):
         return out
 
 
-
 class DCGAN_D(nn.Module):
     def __init__(self, nc, ndf, ngpu=-1, isize=32, n_extra_layers=0):
         super(DCGAN_D, self).__init__()

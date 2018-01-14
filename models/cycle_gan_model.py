@@ -132,10 +132,12 @@ class CycleGANModel(BaseModel):
 
     def backward_D_basic(self, netD, real, fake):
         # Real
-        pred_real = netD.forward(real)
+        print(real.size())
+        pred_real = netD(real)
         loss_D_real = self.criterionGAN(pred_real, True)
         # Fake
-        pred_fake = netD.forward(fake.detach())
+        print(fake.size())
+        pred_fake = netD(Variable(fake))
         loss_D_fake = self.criterionGAN(pred_fake, False)
         # Combined loss
         loss_D = (loss_D_real + loss_D_fake) * 0.5
@@ -145,12 +147,9 @@ class CycleGANModel(BaseModel):
 
     def backward_D_wasserstein(self, netD, real, fake):
         # Real
-        #print(real.size())
         pred_real = netD.forward(real)
-        #print(pred_real.size())
         pred_fake = netD.forward(fake)
         loss_D = self.criterionGAN(pred_fake, pred_real, generator_loss=False)
-        #print(loss_D)
         #loss_D = -(pred_real.mean() - pred_fake.mean())
         # D wants to max pred_real.mean() and min pred_fake.mean()
         # so D wants to min -pred_real.mean() + pred_fake.mean()
@@ -178,6 +177,7 @@ class CycleGANModel(BaseModel):
         self.loss_D_B = loss_D_B
         self.loss_D_B.backward(retain_variables=True)
 
+    # obsolete function
     def backward_wgan_D(self):
         # D_A
         fake_B = self.fake_B_pool.query(self.fake_B)
@@ -196,12 +196,19 @@ class CycleGANModel(BaseModel):
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
-            self.idt_A = self.netG_A.forward(self.real_B)
-            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
+            idt_A = self.netG_A(self.real_B)
+            loss_idt_A = self.criterionIdt(idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed.
-            self.idt_B = self.netG_B.forward(self.real_A)
-            self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
+            idt_B = self.netG_B(self.real_A)
+            loss_idt_B = self.criterionIdt(idt_B, self.real_A) * lambda_A * lambda_idt
+
+            self.idt_A = idt_A.data
+            self.idt_B = idt_B.data
+            self.loss_idt_A = loss_idt_A.data[0]
+            self.loss_idt_B = loss_idt_B.data[0]
         else:
+            loss_idt_A = 0
+            loss_idt_B = 0
             self.loss_idt_A = 0
             self.loss_idt_B = 0
 
@@ -209,24 +216,24 @@ class CycleGANModel(BaseModel):
         # D_A(G_A(A))
         fake_B = self.netG_A.forward(self.real_A)
         pred_fake = self.netD_A.forward(fake_B)
-        self.loss_G_A = self.criterionGAN(pred_fake, True)
+        loss_G_A = self.criterionGAN(pred_fake, True)
 
         # D_B(G_B(B))
         fake_A = self.netG_B.forward(self.real_B)
         pred_fake = self.netD_B.forward(fake_A)
-        self.loss_G_B = self.criterionGAN(pred_fake, True)
+        loss_G_B = self.criterionGAN(pred_fake, True)
 
         # Forward cycle loss
         rec_A = self.netG_B.forward(fake_B)
-        self.loss_cycle_A = self.criterionCycle(rec_A, self.real_A) * lambda_A
+        loss_cycle_A = self.criterionCycle(rec_A, self.real_A) * lambda_A
 
         # Backward cycle loss
-        rec_B = self.netG_A.forward(self.fake_A)
-        self.loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
+        rec_B = self.netG_A.forward(fake_A)
+        loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
         # combined loss
         loss_G = loss_G_A + loss_G_B + loss_cycle_A + loss_cycle_B + loss_idt_A + loss_idt_B
-        self.loss_G.backward()
+        loss_G.backward()
 
         self.fake_B = fake_B.data
         self.fake_A = fake_A.data

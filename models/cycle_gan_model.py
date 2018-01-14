@@ -150,7 +150,9 @@ class CycleGANModel(BaseModel):
     def backward_D_wasserstein(self, netD, real, fake):
         # Real
         pred_real = netD(real)
-        pred_fake = netD(fake)
+        fakev = Variable(fake)
+        pred_fake = netD(fakev)
+        #pred_fake = netD(fake)
         loss_D = self.criterionGAN(pred_fake, pred_real, generator_loss=False)
         #loss_D = -(pred_real.mean() - pred_fake.mean())
         # D wants to max pred_real.mean() and min pred_fake.mean()
